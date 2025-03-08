@@ -1,7 +1,10 @@
 idf_component_register(
     SRC_DIRS 
         "." 
-        
+        "BSP/IIC"
+        "BSP/PCA9557"
     INCLUDE_DIRS 
         "."
-        )
+        "BSP/IIC"
+        "BSP/PCA9557"
+)
