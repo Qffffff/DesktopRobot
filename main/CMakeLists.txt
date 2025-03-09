@@ -3,8 +3,10 @@ idf_component_register(
         "." 
         "BSP/IIC"
         "BSP/PCA9557"
+        "BSP/LCD"
     INCLUDE_DIRS 
         "."
         "BSP/IIC"
         "BSP/PCA9557"
+        "BSP/LCD"
 )

@@ -1,0 +1,24 @@
+dependencies:
+  espressif/esp_lcd_touch:
+    dependencies: []
+    source:
+      path: /home/liyi/share/esp/DesktopRobot/components/espressif__esp_lcd_touch
+      type: local
+    version: 1.1.2
+  idf:
+    source:
+      type: idf
+    version: 5.1.6
+  lvgl/lvgl:
+    dependencies: []
+    source:
+      path: /home/liyi/share/esp/DesktopRobot/components/lvgl__lvgl
+      type: local
+    version: 8.4.0
+direct_dependencies:
+- espressif/esp_lcd_touch
+- idf
+- lvgl/lvgl
+manifest_hash: fdd3fb7831fbbab1d4876f3d7290b861701bf2e43d9248643e2c08dfe0fe4777
+target: esp32s3
+version: 2.0.0

@@ -8,6 +8,9 @@
 #include "esp_flash.h"
 #include "bsp_iic.h"
 #include "pca9557.h"
+#include "bsp_lcd.h"
+
+
 
 void app_main(void)
 {
@@ -15,4 +18,5 @@ void app_main(void)
 
     bsp_i2c_init();
     pca9557_init();
+    bsp_lvgl_start();
 }
