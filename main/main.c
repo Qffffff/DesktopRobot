@@ -10,6 +10,7 @@
 #include "pca9557.h"
 #include "bsp_lcd.h"
 #include "wifi_app.h"
+#include "rtos_init.h"
 #include "nvs_flash.h"
 
 
@@ -28,5 +29,7 @@ void app_main(void)
     bsp_i2c_init();
     pca9557_init();
     bsp_lvgl_start();
-    app_wifi_connect();
+    //app_wifi_connect();
+
+    rtos_init();
 }

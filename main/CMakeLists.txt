@@ -4,11 +4,15 @@ idf_component_register(
         "BSP/IIC"
         "BSP/PCA9557"
         "BSP/LCD"
-        "APP"
+        "APP/WIFI"
+        "APP/RTOS"
+        "APP/INTERFACE"
     INCLUDE_DIRS 
         "."
         "BSP/IIC"
         "BSP/PCA9557"
         "BSP/LCD"
-        "APP"
+        "APP/WIFI"
+        "APP/RTOS"
+        "APP/INTERFACE"
 )
