@@ -285,7 +285,7 @@ void app_wifi_connect(void)
 
     //lvgl_port_lock(0);
     // 扫描附近wifi信息成功后 删除提示文字
-    lv_obj_del(label_wifi_scan);
+    //lv_obj_del(label_wifi_scan);
     // 创建wifi信息列表
     wifi_list = lv_list_create(wifi_scan_page);
     lv_obj_set_size(wifi_list, lv_pct(100), lv_pct(100));
