@@ -1,5 +1,6 @@
 #include "rtos_init.h"
 #include "lvgl_interface.h"
+#include "bsp_i2s.h"
 
 #define LVGL_TASK_PRIO   2                  /* 任务优先级 */
 #define WIFI_TASK_PRIO   1                  /* 任务优先级 */
@@ -9,7 +10,7 @@ TaskHandle_t WIFI_Task_Handler;             /* 任务句柄 */
 void lvgl_task(void *pvParameters);         /* 任务函数 */
 void wifi_task(void *pvParameters);         /* 任务函数 */
 
-
+static const char *TAG = "RTOS";
 
 void rtos_init(void)
 {
@@ -27,11 +28,12 @@ void rtos_init(void)
 void lvgl_task(void *pvParameters)
 {
     pvParameters = pvParameters;
-    
+
     main_interface();
 
     while (1)
     {
+        i2s_read();
         vTaskDelay(pdMS_TO_TICKS(10));  /* 延时10毫秒 */
     }
 }

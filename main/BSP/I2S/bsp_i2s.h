@@ -7,6 +7,8 @@
 #include "esp_log.h"
 #include "driver/i2s_tdm.h"
 #include "driver/i2s_std.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
 
 /* I2S port and GPIOs */
 #define EXAMPLE_I2S_NUM            (0)
@@ -25,5 +27,5 @@
 #define EXAMPLE_I2S_TDM_SLOT_MASK  (I2S_TDM_SLOT0 | I2S_TDM_SLOT1)
 
 i2s_chan_handle_t i2s_init(void);
-
+void i2s_read(void);
 #endif

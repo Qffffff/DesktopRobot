@@ -4,6 +4,8 @@
 #include "driver/i2c.h"
 #include "bsp_i2s.h"
 #include "es7210.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
 
 #define EXAMPLE_I2C_NUM            (0)
 #define EXAMPLE_ES7210_I2C_ADDR    (0x41)
