@@ -12,7 +12,8 @@
 #include "wifi_app.h"
 #include "rtos_init.h"
 #include "nvs_flash.h"
-
+#include "bsp_i2s.h"
+#include "bsp_es7210.h"
 
 void app_main(void)
 {
@@ -29,6 +30,8 @@ void app_main(void)
     bsp_i2c_init();
     pca9557_init();
     bsp_lvgl_start();
+    i2s_init();
+    es7210_codec_init();
     //app_wifi_connect();
 
     rtos_init();

@@ -18,4 +18,5 @@ dependencies:
   #espressif/esp_lcd_touch_ft5x06: ^1.0.6
   #espressif/esp_lvgl_port: "~1.4.0"         # LVGL接口
   #lvgl/lvgl: ^8.3.11
+  #espressif/es7210: "^1.0.0"
 

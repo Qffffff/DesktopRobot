@@ -1,6 +1,8 @@
 idf_component_register(
     SRC_DIRS 
         "." 
+        "BSP/ES7210"
+        "BSP/I2S"
         "BSP/IIC"
         "BSP/PCA9557"
         "BSP/LCD"
@@ -9,6 +11,8 @@ idf_component_register(
         "APP/INTERFACE"
     INCLUDE_DIRS 
         "."
+        "BSP/ES7210"
+        "BSP/I2S"
         "BSP/IIC"
         "BSP/PCA9557"
         "BSP/LCD"
