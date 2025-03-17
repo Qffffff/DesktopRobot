@@ -3,6 +3,10 @@
 #include "esp_wifi.h"
 #include "freertos/event_groups.h"
 #include "esp_event.h"
+#include <time.h>
+#include "esp_sntp.h"
+#include "esp_sntp.h"       
+#include "esp_netif_sntp.h"
 
 #define DEFAULT_SCAN_LIST_SIZE 10
 static const char *TAG = "WIFI_APP";
@@ -212,6 +216,37 @@ static void wifi_scan(wifi_ap_record_t ap_info[], uint16_t *ap_number)
 
 }
 
+void sntp_connect(void)
+{
+    time_t now;
+    struct tm timeinfo;
+    esp_sntp_config_t config = ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");
+    esp_netif_sntp_init(&config);
+    // wait for time to be set
+    int retry = 0;
+    const int retry_count = 6;
+    while (esp_netif_sntp_sync_wait(2000 / portTICK_PERIOD_MS) == ESP_ERR_TIMEOUT && ++retry < retry_count) {
+        ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
+    }
+
+    if(retry>5)
+    {
+        esp_restart(); // 没有获取到时间的话 重启ESP32
+    }
+
+    esp_netif_sntp_deinit();
+    // 设置时区
+    setenv("TZ", "CST-8", 1); 
+    tzset();
+    // 获取系统时间
+    time(&now);
+    localtime_r(&now, &timeinfo);
+
+    ESP_LOGI(TAG, "hour:%d min:%d sec:%d ", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+    
+    vTaskDelete(NULL);
+}
+
 static void wifi_connect(void *arg)
 {
     wifi_account_t wifi_account;
@@ -247,6 +282,7 @@ static void wifi_connect(void *arg)
             if (bits & WIFI_CONNECTED_BIT) {
                 ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",
                         wifi_config.sta.ssid, wifi_config.sta.password);
+                        sntp_connect();
             } else if (bits & WIFI_FAIL_BIT) {
                 ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",
                         wifi_config.sta.ssid, wifi_config.sta.password);
