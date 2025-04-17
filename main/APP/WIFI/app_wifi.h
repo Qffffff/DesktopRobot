@@ -1,5 +1,5 @@
-#ifndef __WIFI_APP_H
-#define __WIFI_APP_H
+#ifndef __APP_WIFI_H
+#define __APP_WIFI_H
 
 
 
@@ -15,7 +15,7 @@
 
 
 void app_wifi_connect(void);
-
+void app_wifi_init(char *ssid, char *pswd);
 
 
 

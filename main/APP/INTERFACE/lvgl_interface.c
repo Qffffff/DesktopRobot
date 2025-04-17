@@ -1,5 +1,5 @@
 #include "lvgl_interface.h"
-#include "wifi_app.h"
+#include "app_wifi.h"
 
 static const char *TAG = "LVGL_INTERFACE";
 #define PANEL_HEIGHT 240

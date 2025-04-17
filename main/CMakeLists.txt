@@ -9,6 +9,7 @@ idf_component_register(
         "APP/WIFI"
         "APP/RTOS"
         "APP/INTERFACE"
+        "APP/SPIFFS"
     INCLUDE_DIRS 
         "."
         "BSP/ES7210"
@@ -19,4 +20,5 @@ idf_component_register(
         "APP/WIFI"
         "APP/RTOS"
         "APP/INTERFACE"
+        "APP/SPIFFS"
 )
