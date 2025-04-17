@@ -73,8 +73,5 @@ void app_main(void)
     fread(wav_raw_buffer, 1, wav_file_size, wav_file);
     fclose(wav_file);
 
-    baidu_stt(wav_raw_buffer,wav_file_size);
-    baidu_tts(wav_raw_buffer,wav_file_size);
-
-    //rtos_init();
+    rtos_init();
 }

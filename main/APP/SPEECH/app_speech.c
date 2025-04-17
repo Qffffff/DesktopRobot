@@ -1,9 +1,6 @@
 #include "app_speech.h"
 
-
-
 static const char *TAG = "speech";
-
 
 char *access_token = "24.3d9a5b0633f4e2a1b606519e5673f16f.2592000.1747461854.282335-118392405";
 char *url_formate = "http://vop.baidu.com/server_api?dev_pid=1537&cuid=dPKArKm9yCGIOwPoCSjTDzmIIj4cBsEV&token=%s";
