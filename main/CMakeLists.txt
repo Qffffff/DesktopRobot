@@ -10,6 +10,7 @@ idf_component_register(
         "APP/RTOS"
         "APP/INTERFACE"
         "APP/SPIFFS"
+        "APP/SPEECH"
     INCLUDE_DIRS 
         "."
         "BSP/ES7210"
@@ -21,4 +22,5 @@ idf_component_register(
         "APP/RTOS"
         "APP/INTERFACE"
         "APP/SPIFFS"
+        "APP/SPEECH"
 )
