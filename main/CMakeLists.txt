@@ -2,6 +2,7 @@ idf_component_register(
     SRC_DIRS 
         "." 
         "BSP/ES7210"
+        "BSP/ES8311"
         "BSP/I2S"
         "BSP/IIC"
         "BSP/PCA9557"
@@ -14,6 +15,7 @@ idf_component_register(
     INCLUDE_DIRS 
         "."
         "BSP/ES7210"
+        "BSP/ES8311"
         "BSP/I2S"
         "BSP/IIC"
         "BSP/PCA9557"
@@ -23,4 +25,6 @@ idf_component_register(
         "APP/INTERFACE"
         "APP/SPIFFS"
         "APP/SPEECH"
+    EMBED_TXTFILES 
+        "deepseek_ca.pem"
 )

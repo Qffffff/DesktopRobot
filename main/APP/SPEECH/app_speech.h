@@ -7,6 +7,6 @@
 
 
 void baidu_stt(char *buff ,size_t size);
-void baidu_tts(char *buff ,size_t size);
+void baidu_tts(char *text_data);
 
 #endif

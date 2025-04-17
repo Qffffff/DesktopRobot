@@ -11,6 +11,13 @@
 #include "freertos/event_groups.h"
 #include "wav_formate.h"
 
+/* Example configurations */
+#define EXAMPLE_RECV_BUF_SIZE   (2400)
+#define EXAMPLE_SAMPLE_RATE     (16000)
+#define EXAMPLE_MCLK_MULTIPLE   (384) // If not using 24-bit data width, 256 should be enough
+#define EXAMPLE_MCLK_FREQ_HZ    (EXAMPLE_SAMPLE_RATE * EXAMPLE_MCLK_MULTIPLE)
+#define EXAMPLE_VOICE_VOLUME    (70)
+
 /* I2S port and GPIOs */
 #define EXAMPLE_I2S_NUM            (0)
 #define EXAMPLE_I2S_MCK_IO         (38)
@@ -47,7 +54,7 @@ typedef struct {
 
 esp_err_t hal_i2s_microphone_init(i2s_microphone_config_t config);
 void hal_i2s_record(char *file_path, int record_time);
+void api_i2s_write(char *data, int len);
 
-i2s_chan_handle_t i2s_init(void);
-void i2s_read(void);
+
 #endif

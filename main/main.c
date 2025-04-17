@@ -15,6 +15,7 @@
 #include "nvs_flash.h"
 #include "bsp_i2s.h"
 #include "bsp_es7210.h"
+#include "bsp_es8311.h"
 #include "app_spiffs.h"
 #include "esp_heap_caps.h"
 #include "app_speech.h"
@@ -54,7 +55,10 @@ void app_main(void)
     bsp_lvgl_start();
     //i2s_init();
     es7210_codec_init();
-    app_wifi_init("Flairmicro-wifi01","flaircomm");
+    es8311_codec_init();
+    pa_en(1);
+
+    app_wifi_init("CU-FB60","dets2749");
 
     app_spiffs_init("/spiffs");
     hal_i2s_microphone_init(i2s_microphone_config);
@@ -72,6 +76,8 @@ void app_main(void)
     }
     fread(wav_raw_buffer, 1, wav_file_size, wav_file);
     fclose(wav_file);
+
+    baidu_stt(wav_raw_buffer ,wav_file_size);
 
     rtos_init();
 }

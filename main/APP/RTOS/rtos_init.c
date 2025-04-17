@@ -1,6 +1,7 @@
 #include "rtos_init.h"
 #include "lvgl_interface.h"
 #include "app_speech.h"
+#include "deepseek.h"
 
 static const char *TAG = "RTOS";
 
@@ -36,9 +37,12 @@ void speech_task(void *pvParameters)
 
     ESP_LOGI(TAG, "speech_task begin");
 
+    //baidu_tts();
+
     while (1)
     {
         vTaskDelay(pdMS_TO_TICKS(10));  /* 延时10毫秒 */
+        
     }
 }
 

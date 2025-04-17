@@ -19,4 +19,5 @@ dependencies:
   #espressif/esp_lvgl_port: "~1.4.0"         # LVGL接口
   #lvgl/lvgl: ^8.3.11
   #espressif/es7210: "^1.0.0"
+  #espressif/es8311: "^1.0.0"
 
