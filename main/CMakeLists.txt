@@ -27,4 +27,5 @@ idf_component_register(
         "APP/SPEECH"
     EMBED_TXTFILES 
         "deepseek_ca.pem"
+        "baidu_ca.pem"
 )

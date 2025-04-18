@@ -5,6 +5,9 @@
 
 static const char *TAG = "speech";
 
+extern const char baidu_root_ca_pem_start[] asm("_binary_baidu_ca_pem_start");
+extern const char baidu_root_ca_pem_end[] asm("_binary_baidu_ca_pem_end");
+
 char *access_token = "24.3d9a5b0633f4e2a1b606519e5673f16f.2592000.1747461854.282335-118392405";
 char *url_formate = "http://vop.baidu.com/server_api?dev_pid=1537&cuid=dPKArKm9yCGIOwPoCSjTDzmIIj4cBsEV&token=%s";
 char *url = "http://tsn.baidu.com/text2audio";
@@ -12,9 +15,6 @@ char *formate = "tex=%s&tok=%s&cuid=mpBNOBqqTHmz93GbNEZDm5vUnwV0Lnm1&ctp=1&lan=z
 //char *text_data = "早上好,下午好,晚上好";
 
 size_t text_url_encode_size = 0;
-
-
-
 
 
 esp_err_t app_http_baidu_speech_recognition_event_handler(esp_http_client_event_t *evt)
@@ -63,6 +63,22 @@ esp_err_t app_http_baidu_tts_event_handler(esp_http_client_event_t *evt)
     return ESP_OK;
 }
 
+
+static void on_ws_event(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) 
+{
+    esp_websocket_event_data_t *data = (esp_websocket_event_data_t *)event_data;
+    switch (event_id) 
+    {
+        case WEBSOCKET_EVENT_CONNECTED:
+            ESP_LOGI(TAG, "WebSocket connected to ASR server");
+            break;
+
+        case WEBSOCKET_EVENT_DATA:
+            ESP_LOGI(TAG, "Received data, len: %d", data->data_len);
+            break;
+    }
+}
+
 void baidu_stt(char *buff ,size_t size)
 {
     esp_http_client_handle_t client;
@@ -82,9 +98,9 @@ void baidu_stt(char *buff ,size_t size)
 
     esp_err_t err = esp_http_client_perform(client);
     if (err == ESP_OK) {
-        ESP_LOGI(TAG, "BAIDU GET Status = %d, content_length = %d", esp_http_client_get_status_code(client), (int)esp_http_client_get_content_length(client));
+        ESP_LOGI(TAG, "baidu_stt GET Status = %d, content_length = %d", esp_http_client_get_status_code(client), (int)esp_http_client_get_content_length(client));
     } else {
-        ESP_LOGI(TAG, "BAIDU GET request failed: %s", esp_err_to_name(err));
+        ESP_LOGI(TAG, "baidu_stt GET request failed: %s", esp_err_to_name(err));
     }
     esp_http_client_cleanup(client);
     free(url_data);  
@@ -132,13 +148,29 @@ void baidu_tts(char *text_data)
 
     esp_err_t err = esp_http_client_perform(client);
     if (err == ESP_OK) {
-        ESP_LOGI(TAG, "HTTP GET Status = %d, content_length = %d", esp_http_client_get_status_code(client), (int)esp_http_client_get_content_length(client));
+        ESP_LOGI(TAG, "baidu_tts GET Status = %d, content_length = %d", esp_http_client_get_status_code(client), (int)esp_http_client_get_content_length(client));
     } else {
-        ESP_LOGI(TAG, "HTTP GET request failed: %s", esp_err_to_name(err));
+        ESP_LOGI(TAG, "baidu_tts GET request failed: %s", esp_err_to_name(err));
     }
-    esp_http_client_cleanup(client);
 
+    esp_http_client_cleanup(client);
     free(text_url_encode);
     free(payload);
+}
 
+void WebSocket_Init(void)
+{
+    esp_websocket_client_handle_t ws_client;
+    esp_websocket_client_config_t cfg = {
+        .uri = "wss://vop.baidu.com/realtime_asr?sn=XXXX-XXXX-XXXX-XXX",
+        .reconnect_timeout_ms = 5000,           // 设置重连间隔为 5 秒
+        .network_timeout_ms = 8000,             // 设置网络操作超时为 8 秒
+        .cert_pem   = baidu_root_ca_pem_start,
+        .cert_len   = baidu_root_ca_pem_end - baidu_root_ca_pem_start,
+        .ping_interval_sec = 5,  // 每 10 秒发送 ping
+    };
+    ws_client = esp_websocket_client_init(&cfg);
+    esp_websocket_register_events(ws_client, WEBSOCKET_EVENT_CONNECTED, on_ws_event, (void *)ws_client);
+    esp_websocket_register_events(ws_client, WEBSOCKET_EVENT_DATA, on_ws_event, (void *)ws_client);
+    esp_websocket_client_start(ws_client);
 }

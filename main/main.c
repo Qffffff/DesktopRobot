@@ -54,30 +54,39 @@ void app_main(void)
     pca9557_init();
     bsp_lvgl_start();
     //i2s_init();
-    es7210_codec_init();
-    es8311_codec_init();
-    pa_en(1);
+    //es7210_codec_init();
+    //es8311_codec_init();
+    //pa_en(1);
 
-    app_wifi_init("CU-FB60","dets2749");
+    //app_wifi_init("CU-FB60","dets2749");
+    app_wifi_init("Flairmicro-wifi01","flaircomm");
 
-    app_spiffs_init("/spiffs");
-    hal_i2s_microphone_init(i2s_microphone_config);
+    // app_spiffs_init("/spiffs");
+    // hal_i2s_microphone_init(i2s_microphone_config);
 
-    hal_i2s_record("/spiffs/record.wav", 2);
-    wav_file = fopen("/spiffs/record.wav", "r");
-    fseek(wav_file, 0, SEEK_END);
-    wav_file_size = ftell(wav_file);
-    fseek(wav_file, 0, SEEK_SET);
-    ESP_LOGI(TAG, "WAV File size:%zu", wav_file_size);
-    wav_raw_buffer = heap_caps_malloc(wav_file_size + 1, MALLOC_CAP_DMA);
-    if (wav_raw_buffer == NULL) {
-        ESP_LOGI(TAG, "Malloc wav raw buffer fail");
-        return;
+    // hal_i2s_record("/spiffs/record.wav", 2);
+    // wav_file = fopen("/spiffs/record.wav", "r");
+    // fseek(wav_file, 0, SEEK_END);
+    // wav_file_size = ftell(wav_file);
+    // fseek(wav_file, 0, SEEK_SET);
+    // ESP_LOGI(TAG, "WAV File size:%zu", wav_file_size);
+    // wav_raw_buffer = heap_caps_malloc(wav_file_size + 1, MALLOC_CAP_DMA);
+    // if (wav_raw_buffer == NULL) {
+    //     ESP_LOGI(TAG, "Malloc wav raw buffer fail");
+    //     return;
+    // }
+    // fread(wav_raw_buffer, 1, wav_file_size, wav_file);
+    // fclose(wav_file);
+
+    // baidu_stt(wav_raw_buffer ,wav_file_size);
+
+    WebSocket_Init();
+
+    //rtos_init();
+
+    while (1)
+    {
+        /* code */
     }
-    fread(wav_raw_buffer, 1, wav_file_size, wav_file);
-    fclose(wav_file);
-
-    baidu_stt(wav_raw_buffer ,wav_file_size);
-
-    rtos_init();
+    
 }
