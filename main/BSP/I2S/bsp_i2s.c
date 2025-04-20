@@ -46,7 +46,7 @@ esp_err_t hal_i2s_microphone_init(i2s_microphone_config_t config)
 
 void hal_i2s_record(char *file_path, int record_time)
 {
-    ESP_LOGI(TAG, "Start Record");
+    
     record_info.flash_wr_size = 0;
     record_info.byte_rate = 1 * record_info.i2s_config.sample_rate * record_info.i2s_config.bits_per_sample / 8; // 声道数×采样频率×每样本的数据位数/8。播放软件利用此值可以估计缓冲区的大小。
     record_info.bytes_all = record_info.byte_rate * record_time;                                                 // 设定时间下的所有数据大小
@@ -63,11 +63,11 @@ void hal_i2s_record(char *file_path, int record_time)
     // 创建WAV文件
     FILE *f = fopen(file_path, "a");
     if (f == NULL) {
-        ESP_LOGI(TAG, "Failed to open file");
         return;
     }
     fwrite(&wav_header, sizeof(wav_header), 1, f);
 
+    ESP_LOGI(TAG, "Start Record");
     while (record_info.flash_wr_size < record_info.bytes_all) {
         char *i2s_raw_buffer = heap_caps_calloc(1, record_info.sample_size, MALLOC_CAP_DMA);
         if (i2s_raw_buffer == NULL) {
@@ -93,4 +93,9 @@ void hal_i2s_record(char *file_path, int record_time)
 void api_i2s_write(char *data, int len)
 {
     i2s_channel_write(tx_handle, data, len, NULL, 100);
+}
+
+void api_i2s_read(char *data)
+{
+    i2s_channel_read(rx_handle, data, record_info.sample_size, &record_info.read_size, 100);
 }

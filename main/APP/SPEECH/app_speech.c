@@ -2,6 +2,10 @@
 #include "app_url_encode.h"
 #include "bsp_i2s.h"
 #include "deepseek.h"
+#include "app_spiffs.h"
+#include "key_interrupt.h"
+
+#define BUFFER_LEN      (1024*16)
 
 static const char *TAG = "speech";
 
@@ -14,7 +18,12 @@ char *url = "http://tsn.baidu.com/text2audio";
 char *formate = "tex=%s&tok=%s&cuid=mpBNOBqqTHmz93GbNEZDm5vUnwV0Lnm1&ctp=1&lan=zh&spd=5&pit=5&vol=5&per=4&aue=4"; // PCM 16K
 //char *text_data = "早上好,下午好,晚上好";
 
+static uint8_t buffer[2][BUFFER_LEN];
+static int buf_idx = 0;
+size_t read_bytes = 0;
 size_t text_url_encode_size = 0;
+esp_websocket_client_handle_t ws_client;
+
 
 
 esp_err_t app_http_baidu_speech_recognition_event_handler(esp_http_client_event_t *evt)
@@ -74,7 +83,8 @@ static void on_ws_event(void *handler_args, esp_event_base_t base, int32_t event
             break;
 
         case WEBSOCKET_EVENT_DATA:
-            ESP_LOGI(TAG, "Received data, len: %d", data->data_len);
+            ESP_LOGI(TAG, "Received data , len: %d", data->data_len);
+            ESP_LOGI(TAG, "Received=%.*s", data->data_len, (char *)data->data_ptr);
             break;
     }
 }
@@ -160,9 +170,8 @@ void baidu_tts(char *text_data)
 
 void WebSocket_Init(void)
 {
-    esp_websocket_client_handle_t ws_client;
     esp_websocket_client_config_t cfg = {
-        .uri = "wss://vop.baidu.com/realtime_asr?sn=XXXX-XXXX-XXXX-XXX",
+        .uri = "wss://vop.baidu.com/realtime_asr?sn=ABCD-XXXX-XXXX-XXX",
         .reconnect_timeout_ms = 5000,           // 设置重连间隔为 5 秒
         .network_timeout_ms = 8000,             // 设置网络操作超时为 8 秒
         .cert_pem   = baidu_root_ca_pem_start,
@@ -173,4 +182,62 @@ void WebSocket_Init(void)
     esp_websocket_register_events(ws_client, WEBSOCKET_EVENT_CONNECTED, on_ws_event, (void *)ws_client);
     esp_websocket_register_events(ws_client, WEBSOCKET_EVENT_DATA, on_ws_event, (void *)ws_client);
     esp_websocket_client_start(ws_client);
+}
+
+
+
+
+void detect_vad_task(void) 
+{
+    
+    // esp_websocket_client_start(ws_client);
+    // api_i2s_read(&buffer[buf_idx],read_bytes);
+    if (esp_websocket_client_is_connected(ws_client)) 
+    {
+        //api_i2s_read(&buffer[buf_idx],read_bytes);
+        ESP_LOGI(TAG, "WEBSOCKET_CONNECTED");
+        esp_websocket_client_send_text(ws_client, "你好", 2, 100);
+    }
+
+    buf_idx ^= 1;
+}
+
+FILE *wav_file;
+size_t wav_file_size = 0;
+char *wav_raw_buffer = NULL;
+
+void detect_vad(void) 
+{
+
+    
+    while(1)
+    {
+        if(true == gpio_key_isr())
+        {
+            hal_i2s_record("/spiffs/record.wav", 3);
+            wav_file = fopen("/spiffs/record.wav", "r");
+            fseek(wav_file, 0, SEEK_END);
+            wav_file_size = ftell(wav_file);
+            fseek(wav_file, 0, SEEK_SET);
+            ESP_LOGI(TAG, "WAV File size:%zu", wav_file_size);
+            wav_raw_buffer = heap_caps_malloc(wav_file_size + 1, MALLOC_CAP_DMA);
+            if (wav_raw_buffer == NULL) {
+                ESP_LOGI(TAG, "Malloc wav raw buffer fail");
+                return;
+            }
+            fread(wav_raw_buffer, 1, wav_file_size, wav_file);
+            fclose(wav_file);
+
+            baidu_stt(wav_raw_buffer ,wav_file_size);
+            
+            if (wav_raw_buffer != NULL) {
+                free(wav_raw_buffer);
+                wav_raw_buffer = NULL;
+                ESP_LOGI(TAG, "free");
+            }
+        }
+        vTaskDelay(10);
+    }
+    
+
 }

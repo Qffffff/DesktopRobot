@@ -9,5 +9,7 @@
 void baidu_stt(char *buff ,size_t size);
 void baidu_tts(char *text_data);
 void WebSocket_Init(void);
+void detect_vad_task(void);
+void detect_vad(void);
 
 #endif

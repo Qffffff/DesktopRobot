@@ -55,6 +55,6 @@ typedef struct {
 esp_err_t hal_i2s_microphone_init(i2s_microphone_config_t config);
 void hal_i2s_record(char *file_path, int record_time);
 void api_i2s_write(char *data, int len);
-
+void api_i2s_read(char *data);
 
 #endif

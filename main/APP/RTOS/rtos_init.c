@@ -22,7 +22,7 @@ void lvgl_task(void *pvParameters)
 
     ESP_LOGI(TAG, "lvgl_task begin");
 
-    main_interface();
+    //main_interface();
 
     while (1)
     {
@@ -37,13 +37,13 @@ void speech_task(void *pvParameters)
 
     ESP_LOGI(TAG, "speech_task begin");
 
-    //baidu_tts();
-
-    while (1)
-    {
-        vTaskDelay(pdMS_TO_TICKS(10));  /* 延时10毫秒 */
+    detect_vad(); 
+    // while (1)
+    // {
+    //     detect_vad_task();
+    //     vTaskDelay(pdMS_TO_TICKS(100));  /* 延时10毫秒 */
         
-    }
+    // }
 }
 
 
