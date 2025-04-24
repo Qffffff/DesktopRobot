@@ -57,6 +57,7 @@ void app_main(void)
 
     app_wifi_init("CU-FB60","dets2749");
     //app_wifi_init("Flairmicro-wifi01","flaircomm");
+    sntp_connect();
 
     app_spiffs_init("/spiffs");
     hal_i2s_microphone_init(i2s_microphone_config);

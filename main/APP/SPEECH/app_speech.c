@@ -4,6 +4,7 @@
 #include "deepseek.h"
 #include "app_spiffs.h"
 #include "key_interrupt.h"
+#include "lvgl_interface.h"
 
 #define BUFFER_LEN      (1024*16)
 
@@ -45,7 +46,9 @@ esp_err_t app_http_baidu_speech_recognition_event_handler(esp_http_client_event_
             if (cJSON_IsString(first_result)) {
                 // 打印中文文本
                 ESP_LOGI(TAG, "识别结果: %s", first_result->valuestring);
+                lvgl_set_text_speech(first_result->valuestring);
                 call_deepseek_api(first_result->valuestring);
+                
             } else {
                 ESP_LOGE(TAG, "结果不符合预期，第一项不是字符串");
             }
@@ -85,6 +88,7 @@ static void on_ws_event(void *handler_args, esp_event_base_t base, int32_t event
         case WEBSOCKET_EVENT_DATA:
             ESP_LOGI(TAG, "Received data , len: %d", data->data_len);
             ESP_LOGI(TAG, "Received=%.*s", data->data_len, (char *)data->data_ptr);
+            
             break;
     }
 }
@@ -220,7 +224,7 @@ void detect_vad(void)
             wav_file_size = ftell(wav_file);
             fseek(wav_file, 0, SEEK_SET);
             ESP_LOGI(TAG, "WAV File size:%zu", wav_file_size);
-            wav_raw_buffer = heap_caps_malloc(wav_file_size + 1, MALLOC_CAP_DMA);
+            wav_raw_buffer = malloc(wav_file_size + 1);
             if (wav_raw_buffer == NULL) {
                 ESP_LOGI(TAG, "Malloc wav raw buffer fail");
                 return;

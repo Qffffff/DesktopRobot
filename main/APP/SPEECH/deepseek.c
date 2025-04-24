@@ -3,6 +3,7 @@
 #include "freertos/semphr.h"
 #include "esp_http_client.h"
 #include "app_speech.h"
+#include "lvgl_interface.h"
 
 #define DEEPSEEK_API_URL "https://api.deepseek.com/chat/completions"
 #define API_KEY "sk-b73a76f6a45242fd9504ae5267555f95"
@@ -66,6 +67,7 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
                                 cJSON *content = cJSON_GetObjectItem(message, "content");
                                 if (content != NULL) {
                                     ESP_LOGI(TAG, "Content: %s", content->valuestring);
+                                    lvgl_set_text_speech(content->valuestring);
                                     baidu_tts(content->valuestring);
                                 } else {
                                     ESP_LOGE(TAG, "没有找到 'content' 字段");

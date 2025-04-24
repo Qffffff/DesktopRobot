@@ -11,6 +11,6 @@
 #include "lvgl.h"
 
 void main_interface(void);
-
+void lvgl_set_text_speech(char *text);
 
 #endif

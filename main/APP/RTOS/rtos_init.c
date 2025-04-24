@@ -22,7 +22,7 @@ void lvgl_task(void *pvParameters)
 
     ESP_LOGI(TAG, "lvgl_task begin");
 
-    //main_interface();
+    main_interface();
 
     while (1)
     {
@@ -62,5 +62,5 @@ void rtos_init(void)
                             (void*          )NULL,                  /* 传入给任务函数的参数 */
                             (UBaseType_t    )SPEECH_TASK_PRIO,      /* 任务优先级 */
                             (TaskHandle_t*  )&SPEECH_Task_Handler,  /* 任务句柄 */
-                            (BaseType_t     ) 0);                   /* 该任务哪个内核运行 */
+                            (BaseType_t     ) 1);                   /* 该任务哪个内核运行 */
 }

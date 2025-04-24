@@ -16,8 +16,8 @@
 
 void app_wifi_connect(void);
 void app_wifi_init(char *ssid, char *pswd);
-
-
+void sntp_connect(void);
+void get_sntp_time(uint8_t *hour, uint8_t *min, uint8_t *sec);
 
 
 

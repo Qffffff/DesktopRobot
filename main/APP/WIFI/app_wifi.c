@@ -244,7 +244,27 @@ void sntp_connect(void)
 
     ESP_LOGI(TAG, "hour:%d min:%d sec:%d ", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
     
-    vTaskDelete(NULL);
+    //vTaskDelete(NULL);
+}
+
+
+void get_sntp_time(uint8_t *hour, uint8_t *min, uint8_t *sec)
+{
+    time_t now;
+    struct tm timeinfo;
+
+    // 设置时区
+    setenv("TZ", "CST-8", 1); 
+    tzset();
+    // 获取系统时间
+    time(&now);
+    localtime_r(&now, &timeinfo);
+
+    *hour = timeinfo.tm_hour;
+    *min = timeinfo.tm_min;
+    *sec = timeinfo.tm_sec;
+
+    ESP_LOGI(TAG, "hour:%d min:%d sec:%d ", *hour, *min, *sec);
 }
 
 static void wifi_connect(void *arg)
@@ -282,7 +302,6 @@ static void wifi_connect(void *arg)
             if (bits & WIFI_CONNECTED_BIT) {
                 ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",
                         wifi_config.sta.ssid, wifi_config.sta.password);
-                        sntp_connect();
             } else if (bits & WIFI_FAIL_BIT) {
                 ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",
                         wifi_config.sta.ssid, wifi_config.sta.password);

@@ -2,6 +2,10 @@
 #include "app_wifi.h"
 
 static const char *TAG = "LVGL_INTERFACE";
+
+//字体
+LV_FONT_DECLARE(LryWord);               //汉语
+
 #define PANEL_HEIGHT 240
 #define BOTTOM_ZONE_HEIGHT 30  // 底部触发区域高度
 
@@ -12,6 +16,61 @@ static bool is_panel_open = false;
 static bool is_dragging = false;
 static bool is_from_bottom = false;
 
+uint8_t time_s;
+uint8_t time_m;
+uint8_t time_z;
+
+lv_obj_t *label_time_hour;
+lv_obj_t *label_time_min;
+lv_obj_t *label_time_sec;
+lv_obj_t *label_speech;
+
+void lvgl_set_time()
+{
+
+}
+
+void lvgl_set_text_speech(char *text)
+{
+    lv_label_set_text(label_speech,text);
+}
+
+static void update_time_cb(lv_timer_t *timer)
+{
+    char ctime[10] = {'0'};
+    char hour[3]= {'0'};
+    char min[3] = {'0'};
+    char sec[3] = {'0'};
+
+    if(++time_s >= 60)
+    {
+        time_s = 0;
+        time_m ++;
+    }
+    if(time_m >= 60)
+    {
+        time_m = 0;
+        time_z ++;
+    }
+    if(time_z >= 24)
+    {
+        time_z = 0;
+    }
+    ctime[0] = (time_z/10 + '0');
+    ctime[1] = (time_z%10 + '0');
+    ctime[3] = (time_m/10 + '0');
+    ctime[4] = (time_m%10 + '0');
+    ctime[6] = (time_s/10 + '0');
+    ctime[7] = (time_s%10 + '0');
+
+    memcpy(hour,&ctime[0],2); 
+    memcpy(min,&ctime[3],2); 
+    memcpy(sec,&ctime[6],2); 
+
+    lv_label_set_text(label_time_hour,hour);
+    lv_label_set_text(label_time_min,min);
+    //lv_label_set_text(label_time_sec,sec);
+}
 
 void btn_event_callback(lv_event_t *e) 
 {
@@ -128,7 +187,7 @@ void main_interface(void)
     lv_obj_set_style_text_color(ui_wifi, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_wifi, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_wifi, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_add_event_cb(ui_wifi, wifi_click_cb, LV_EVENT_CLICKED, NULL);
+    //lv_obj_add_event_cb(ui_wifi, wifi_click_cb, LV_EVENT_CLICKED, NULL);
 
     // status_bar = lv_obj_create(ui_home);
     // lv_obj_set_size(status_bar, LV_HOR_RES, 20);
@@ -166,9 +225,41 @@ void main_interface(void)
     lv_obj_set_style_bg_color(drag_hint, lv_color_hex(0x808080), LV_PART_MAIN);
     lv_obj_set_style_radius(drag_hint, 2, LV_PART_MAIN);
 
+    get_sntp_time(&time_z,&time_m,&time_s);
 
+    label_time_hour = lv_label_create(ui_home);
+    //lv_obj_set_size(label_time, scr_act_width/2, scr_act_height * 2/10);
+    lv_obj_set_pos(label_time_hour,140,20);
+    lv_obj_set_style_text_font(label_time_hour, &lv_font_montserrat_14,LV_PART_MAIN);
+    lv_label_set_text(label_time_hour,"00");
+    lv_obj_set_style_bg_opa(label_time_hour,0,LV_PART_MAIN);
+    lv_obj_set_style_text_color(label_time_hour,lv_color_hex(0xFFFFFF),LV_PART_MAIN);
 
+    lv_obj_t *label_time_interval = lv_label_create(ui_home);
+    lv_obj_set_pos(label_time_interval,162,20);
+    lv_obj_set_style_text_font(label_time_interval, &lv_font_montserrat_14, LV_PART_MAIN);
+    lv_label_set_text(label_time_interval,":");
+    lv_obj_set_style_bg_opa(label_time_interval,0,LV_PART_MAIN);
+    lv_obj_set_style_text_color(label_time_interval,lv_color_hex(0xFFFFFF),LV_PART_MAIN);
 
+    label_time_min = lv_label_create(ui_home);
+    //lv_obj_set_size(label_time, scr_act_width/2, scr_act_height * 2/10);
+    lv_obj_set_pos(label_time_min,170,20);
+    lv_obj_set_style_text_font(label_time_min, &lv_font_montserrat_14, LV_PART_MAIN);
+    lv_label_set_text(label_time_min,"00");
+    lv_obj_set_style_bg_opa(label_time_min,0,LV_PART_MAIN);
+    lv_obj_set_style_text_color(label_time_min,lv_color_hex(0xFFFFFF),LV_PART_MAIN);
+    lv_timer_create(update_time_cb, 1000, NULL);//创建一个定时器，每秒更新一次日期、时间、时长
 
+    label_speech = lv_label_create(ui_home);  // 在默认屏幕上创建标签
+    lv_obj_align(label_speech, LV_ALIGN_CENTER, 0, 0);  // 居中对齐
+    lv_label_set_text(label_speech,"你好");
+    lv_obj_set_style_text_font(label_speech, &LryWord, LV_PART_MAIN);
+    lv_label_set_long_mode(label_speech,LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_obj_set_size(label_speech, scr_act_width-40,20);
+    lv_obj_set_style_text_color(label_speech,lv_color_hex(0xFFFFFF),LV_PART_MAIN);
+    
     lv_disp_load_scr(ui_home);
 }
+
+
