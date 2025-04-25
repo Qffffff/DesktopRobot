@@ -53,10 +53,10 @@ void app_main(void)
     //i2s_init();
     es7210_codec_init();
     es8311_codec_init();
-    pa_en(1);
+    //pa_en(1);
 
-    app_wifi_init("CU-FB60","dets2749");
-    //app_wifi_init("Flairmicro-wifi01","flaircomm");
+    //app_wifi_init("CU-FB60","dets2749");
+    app_wifi_init("Flairmicro-wifi01","flaircomm");
     sntp_connect();
 
     app_spiffs_init("/spiffs");

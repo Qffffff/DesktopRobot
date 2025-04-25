@@ -22,7 +22,7 @@ void lvgl_task(void *pvParameters)
 
     ESP_LOGI(TAG, "lvgl_task begin");
 
-    main_interface();
+    lvgl_interface_init();
 
     while (1)
     {

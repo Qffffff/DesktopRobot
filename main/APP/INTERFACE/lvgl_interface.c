@@ -9,6 +9,9 @@ LV_FONT_DECLARE(LryWord);               //汉语
 #define PANEL_HEIGHT 240
 #define BOTTOM_ZONE_HEIGHT 30  // 底部触发区域高度
 
+
+lv_obj_t *main_screen;
+lv_obj_t *sub_screen;
 lv_obj_t *panel;
 lv_obj_t *status_bar;
 static lv_coord_t start_y;
@@ -24,6 +27,44 @@ lv_obj_t *label_time_hour;
 lv_obj_t *label_time_min;
 lv_obj_t *label_time_sec;
 lv_obj_t *label_speech;
+
+
+static void main_screen_event_handler(lv_event_t *e) 
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    if(code == LV_EVENT_GESTURE)
+    {
+        lv_indev_t *indev = lv_indev_get_act();
+        if(indev)
+        {
+            lv_dir_t dir = lv_indev_get_gesture_dir(indev);
+            if(dir == LV_DIR_LEFT) 
+            {
+                // 左滑切换到副界面，动画向左移动
+                lv_scr_load_anim(sub_screen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, false);
+            }
+        }
+    }
+}
+
+
+static void sub_screen_event_handler(lv_event_t *e) 
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    if(code == LV_EVENT_GESTURE) 
+    {
+        lv_indev_t *indev = lv_indev_get_act();
+        if(indev) 
+        {
+            lv_dir_t dir = lv_indev_get_gesture_dir(indev);
+            if(dir == LV_DIR_RIGHT) 
+            {
+                // 右滑返回主界面，动画向右移动
+                lv_scr_load_anim(main_screen, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 300, 0, false);
+            }
+        }
+    }
+}
 
 void lvgl_set_time()
 {
@@ -174,12 +215,12 @@ void main_interface(void)
     ESP_LOGI(TAG, "scr_act_width \t\t%d", scr_act_width);  // 终端输出wifi名称
     ESP_LOGI(TAG, "scr_act_height \t\t%d", scr_act_height);  // 终端输出wifi名称
 
-    lv_obj_t *ui_home = lv_obj_create(NULL);
-    lv_obj_clear_flag(ui_home, LV_OBJ_FLAG_SCROLLABLE); 
-    lv_obj_set_style_bg_color(ui_home, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);  
+    main_screen = lv_obj_create(NULL);
+    lv_obj_clear_flag(main_screen, LV_OBJ_FLAG_SCROLLABLE); 
+    lv_obj_set_style_bg_color(main_screen, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);  
 
 
-    lv_obj_t *ui_wifi = lv_label_create(ui_home);
+    lv_obj_t *ui_wifi = lv_label_create(main_screen);
     lv_obj_set_x(ui_wifi, 20);
     lv_obj_set_y(ui_wifi, 20);
     lv_label_set_text(ui_wifi, LV_SYMBOL_WIFI);
@@ -189,12 +230,12 @@ void main_interface(void)
     lv_obj_set_style_text_font(ui_wifi, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
     //lv_obj_add_event_cb(ui_wifi, wifi_click_cb, LV_EVENT_CLICKED, NULL);
 
-    // status_bar = lv_obj_create(ui_home);
+    // status_bar = lv_obj_create(main_screen);
     // lv_obj_set_size(status_bar, LV_HOR_RES, 20);
     // lv_obj_set_style_bg_color(status_bar, lv_color_hex(0x000000), LV_PART_MAIN);
-    lv_obj_add_event_cb(ui_home, panel_event_cb, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(main_screen, panel_event_cb, LV_EVENT_ALL, NULL);
 
-    panel = lv_obj_create(ui_home);                                              // 下拉面板
+    panel = lv_obj_create(main_screen);                                              // 下拉面板
     lv_obj_set_size(panel, scr_act_width, scr_act_height);
     lv_obj_set_y(panel, -scr_act_height);                                        // 初始隐藏
     lv_obj_set_style_bg_color(panel, lv_color_hex(0xF0F0F0), LV_PART_MAIN);
@@ -227,39 +268,66 @@ void main_interface(void)
 
     get_sntp_time(&time_z,&time_m,&time_s);
 
-    label_time_hour = lv_label_create(ui_home);
-    //lv_obj_set_size(label_time, scr_act_width/2, scr_act_height * 2/10);
+    label_time_hour = lv_label_create(main_screen);
     lv_obj_set_pos(label_time_hour,140,20);
     lv_obj_set_style_text_font(label_time_hour, &lv_font_montserrat_14,LV_PART_MAIN);
     lv_label_set_text(label_time_hour,"00");
     lv_obj_set_style_bg_opa(label_time_hour,0,LV_PART_MAIN);
     lv_obj_set_style_text_color(label_time_hour,lv_color_hex(0xFFFFFF),LV_PART_MAIN);
 
-    lv_obj_t *label_time_interval = lv_label_create(ui_home);
+    lv_obj_t *label_time_interval = lv_label_create(main_screen);
     lv_obj_set_pos(label_time_interval,162,20);
     lv_obj_set_style_text_font(label_time_interval, &lv_font_montserrat_14, LV_PART_MAIN);
     lv_label_set_text(label_time_interval,":");
     lv_obj_set_style_bg_opa(label_time_interval,0,LV_PART_MAIN);
     lv_obj_set_style_text_color(label_time_interval,lv_color_hex(0xFFFFFF),LV_PART_MAIN);
 
-    label_time_min = lv_label_create(ui_home);
-    //lv_obj_set_size(label_time, scr_act_width/2, scr_act_height * 2/10);
+    label_time_min = lv_label_create(main_screen);
     lv_obj_set_pos(label_time_min,170,20);
     lv_obj_set_style_text_font(label_time_min, &lv_font_montserrat_14, LV_PART_MAIN);
     lv_label_set_text(label_time_min,"00");
     lv_obj_set_style_bg_opa(label_time_min,0,LV_PART_MAIN);
     lv_obj_set_style_text_color(label_time_min,lv_color_hex(0xFFFFFF),LV_PART_MAIN);
-    lv_timer_create(update_time_cb, 1000, NULL);//创建一个定时器，每秒更新一次日期、时间、时长
+    lv_timer_create(update_time_cb, 1000, NULL);
 
-    label_speech = lv_label_create(ui_home);  // 在默认屏幕上创建标签
-    lv_obj_align(label_speech, LV_ALIGN_CENTER, 0, 0);  // 居中对齐
+    label_speech = lv_label_create(main_screen);  
+    lv_obj_align(label_speech, LV_ALIGN_CENTER, 0, 0);  
     lv_label_set_text(label_speech,"你好");
     lv_obj_set_style_text_font(label_speech, &LryWord, LV_PART_MAIN);
     lv_label_set_long_mode(label_speech,LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_size(label_speech, scr_act_width-40,20);
     lv_obj_set_style_text_color(label_speech,lv_color_hex(0xFFFFFF),LV_PART_MAIN);
+
+
+    lv_obj_add_event_cb(main_screen, main_screen_event_handler, LV_EVENT_GESTURE, NULL);
+    lv_obj_add_flag(main_screen, LV_OBJ_FLAG_CLICKABLE); 
     
-    lv_disp_load_scr(ui_home);
+    lv_disp_load_scr(main_screen);
 }
 
 
+void Secondary_interface(void)
+{
+    sub_screen = lv_obj_create(NULL);
+    lv_obj_set_size(sub_screen, LV_HOR_RES, LV_VER_RES);
+    lv_obj_clear_flag(sub_screen, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_color(sub_screen, lv_color_hex(0x000000), LV_PART_MAIN);  
+    
+    lv_obj_t *label = lv_label_create(sub_screen);
+    lv_label_set_text(label, "副界面");
+    lv_obj_center(label);
+    
+    lv_obj_add_event_cb(sub_screen, sub_screen_event_handler, LV_EVENT_GESTURE, NULL);
+    lv_obj_add_flag(sub_screen, LV_OBJ_FLAG_CLICKABLE);
+}
+
+
+
+void lvgl_interface_init(void)
+{
+    main_interface();
+    Secondary_interface();
+    
+    // 初始加载主界面
+    lv_scr_load(main_screen);
+}
