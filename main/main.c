@@ -21,18 +21,6 @@
 #include "app_speech.h"
 #include "key_interrupt.h"
 
-static const char *TAG = "main";
-
-i2s_microphone_config_t i2s_microphone_config = {
-    .bclk_pin = GPIO_NUM_14,
-    .ws_pin = GPIO_NUM_13,
-    .din_pin = GPIO_NUM_12,
-    .i2s_num = I2S_NUM_0,
-    .sample_rate = 16 * 1000,
-    .bits_per_sample = I2S_DATA_BIT_WIDTH_16BIT,
-};
-
-
 void app_main(void)
 {
     printf("DesktopRobot!\n");
@@ -60,7 +48,7 @@ void app_main(void)
     sntp_connect();
 
     app_spiffs_init("/spiffs");
-    hal_i2s_microphone_init(i2s_microphone_config);
+    hal_i2s_microphone_init();
 
     //WebSocket_Init();
 

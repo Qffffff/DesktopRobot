@@ -14,9 +14,8 @@
 /* Example configurations */
 #define EXAMPLE_RECV_BUF_SIZE   (2400)
 #define EXAMPLE_SAMPLE_RATE     (16000)
-#define EXAMPLE_MCLK_MULTIPLE   (384) // If not using 24-bit data width, 256 should be enough
+#define EXAMPLE_MCLK_MULTIPLE   (256) // If not using 24-bit data width, 256 should be enough
 #define EXAMPLE_MCLK_FREQ_HZ    (EXAMPLE_SAMPLE_RATE * EXAMPLE_MCLK_MULTIPLE)
-#define EXAMPLE_VOICE_VOLUME    (70)
 
 /* I2S port and GPIOs */
 #define EXAMPLE_I2S_NUM            (0)
@@ -24,6 +23,7 @@
 #define EXAMPLE_I2S_BCK_IO         (14)
 #define EXAMPLE_I2S_WS_IO          (13)
 #define EXAMPLE_I2S_DI_IO          (12)
+#define EXAMPLE_I2S_DO_IO          (45)
 
 
 /* I2S configurations */
@@ -52,7 +52,7 @@ typedef struct {
     size_t read_size;                   // i2s读出的长度
 } record_info_t;
 
-esp_err_t hal_i2s_microphone_init(i2s_microphone_config_t config);
+esp_err_t hal_i2s_microphone_init(void);
 void hal_i2s_record(char *file_path, int record_time);
 void api_i2s_write(char *data, int len);
 void api_i2s_read(char *data);

@@ -6,25 +6,35 @@
 #include "esp_heap_caps.h"
 
 static const char *TAG = "BSP_I2S";
+
 i2s_chan_handle_t rx_handle;
 i2s_chan_handle_t tx_handle;
 record_info_t record_info = {};
 
-esp_err_t hal_i2s_microphone_init(i2s_microphone_config_t config)
+i2s_microphone_config_t config = {
+    .bclk_pin = EXAMPLE_I2S_BCK_IO,
+    .ws_pin  = EXAMPLE_I2S_WS_IO,
+    .din_pin = EXAMPLE_I2S_DI_IO,
+    .i2s_num = I2S_NUM_0,
+    .sample_rate = EXAMPLE_SAMPLE_RATE,
+    .bits_per_sample = I2S_DATA_BIT_WIDTH_16BIT,
+};
+
+esp_err_t hal_i2s_microphone_init(void)
 {
     esp_err_t ret_val = ESP_OK;
     i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(config.i2s_num, I2S_ROLE_MASTER);
 
     ret_val |= i2s_new_channel(&chan_cfg, &tx_handle, &rx_handle);
     i2s_std_config_t std_cfg = {
-        .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(config.sample_rate),
-        .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(config.bits_per_sample, I2S_SLOT_MODE_MONO),
+        .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(EXAMPLE_SAMPLE_RATE),
+        .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
         .gpio_cfg = {
-            .mclk = GPIO_NUM_38,
-            .bclk = config.bclk_pin,
-            .ws = config.ws_pin,
-            .dout = GPIO_NUM_45,
-            .din = config.din_pin,
+            .mclk = EXAMPLE_I2S_MCK_IO,
+            .bclk = EXAMPLE_I2S_BCK_IO,
+            .ws =   EXAMPLE_I2S_WS_IO,
+            .dout = EXAMPLE_I2S_DO_IO,
+            .din = EXAMPLE_I2S_DI_IO,
             .invert_flags = {
                 .mclk_inv = false,
                 .bclk_inv = false,
@@ -51,8 +61,10 @@ void hal_i2s_record(char *file_path, int record_time)
     record_info.byte_rate = 1 * record_info.i2s_config.sample_rate * record_info.i2s_config.bits_per_sample / 8; // 声道数×采样频率×每样本的数据位数/8。播放软件利用此值可以估计缓冲区的大小。
     record_info.bytes_all = record_info.byte_rate * record_time;                                                 // 设定时间下的所有数据大小
     record_info.sample_size = record_info.i2s_config.bits_per_sample * 1024;                                     // 每一次采样的带下
-    const wav_header_t wav_header = WAV_HEADER_PCM_DEFAULT(record_info.bytes_all, record_info.i2s_config.bits_per_sample, record_info.i2s_config.sample_rate, 1);
-
+    const wav_header_t wav_header = WAV_HEADER_PCM_DEFAULT(record_info.bytes_all, 
+                                                           record_info.i2s_config.bits_per_sample, 
+                                                           record_info.i2s_config.sample_rate, 
+                                                           1);
     // 判断文件是否存在
     struct stat st;
     if (stat(file_path, &st) == 0) {
