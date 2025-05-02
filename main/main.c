@@ -20,6 +20,9 @@
 #include "esp_heap_caps.h"
 #include "app_speech.h"
 #include "key_interrupt.h"
+#include "sdmmc_cmd.h"
+#include "driver/sdmmc_host.h"
+#include "esp_vfs_fat.h"
 
 void app_main(void)
 {
@@ -41,16 +44,22 @@ void app_main(void)
     //i2s_init();
     es7210_codec_init();
     es8311_codec_init();
-    //pa_en(1);
+    hal_i2s_microphone_init();
+    pa_en(1);
 
-    //app_wifi_init("CU-FB60","dets2749");
-    app_wifi_init("Flairmicro-wifi01","flaircomm");
+    app_wifi_init("CU-FB60","dets2749");
+    //app_wifi_init("Flairmicro-wifi01","flaircomm");
     sntp_connect();
 
-    app_spiffs_init("/spiffs");
-    hal_i2s_microphone_init();
+    
+    //app_spiffs_init("/spiffs");
+    
 
-    //WebSocket_Init();
+    // sdmmc_card_t *sdmmc_card = mount_sdcard();
+    // record_wav();
+    // esp_vfs_fat_sdcard_unmount(EXAMPLE_SD_MOUNT_POINT, sdmmc_card);
+
+    WebSocket_Init();
 
     rtos_init();
 

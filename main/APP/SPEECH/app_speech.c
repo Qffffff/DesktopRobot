@@ -6,6 +6,7 @@
 #include "key_interrupt.h"
 #include "lvgl_interface.h"
 
+
 #define BUFFER_LEN      (1024*16)
 
 static const char *TAG = "speech";
@@ -25,7 +26,14 @@ size_t read_bytes = 0;
 size_t text_url_encode_size = 0;
 esp_websocket_client_handle_t ws_client;
 
+QueueHandle_t xSpeechQueue = NULL;
 
+typedef struct {
+    char *message;  // 存储字符串内容
+    uint8_t flg;
+    uint16_t len;   // 字符串长度（可选，用于校验）
+} SpeechResult_t;
+SpeechResult_t payload;
 
 esp_err_t app_http_baidu_speech_recognition_event_handler(esp_http_client_event_t *evt)
 {
@@ -76,22 +84,7 @@ esp_err_t app_http_baidu_tts_event_handler(esp_http_client_event_t *evt)
 }
 
 
-static void on_ws_event(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) 
-{
-    esp_websocket_event_data_t *data = (esp_websocket_event_data_t *)event_data;
-    switch (event_id) 
-    {
-        case WEBSOCKET_EVENT_CONNECTED:
-            ESP_LOGI(TAG, "WebSocket connected to ASR server");
-            break;
 
-        case WEBSOCKET_EVENT_DATA:
-            ESP_LOGI(TAG, "Received data , len: %d", data->data_len);
-            ESP_LOGI(TAG, "Received=%.*s", data->data_len, (char *)data->data_ptr);
-            
-            break;
-    }
-}
 
 void baidu_stt(char *buff ,size_t size)
 {
@@ -172,38 +165,173 @@ void baidu_tts(char *text_data)
     free(payload);
 }
 
+
+char* create_start_frame(void) 
+{
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "type", "START");
+    
+    cJSON *data = cJSON_CreateObject();
+    cJSON_AddNumberToObject(data, "appid", 118684059);
+    cJSON_AddStringToObject(data, "appkey", "kVknLOl5pG0dwNeY7K81c3ZU");
+    cJSON_AddNumberToObject(data, "dev_pid", 1537); // 修正为有效值1537
+    cJSON_AddStringToObject(data, "cuid", "esp32-01");
+    cJSON_AddStringToObject(data, "format", "pcm");
+    cJSON_AddNumberToObject(data, "sample", 16000); // 注意字段名是sample
+    
+    // 方言模型需添加user字段
+    // cJSON_AddStringToObject(data, "user", "custom_user");
+    
+    cJSON_AddItemToObject(root, "data", data);
+
+    char *json_str = cJSON_PrintUnformatted(root);
+    ESP_LOGI(TAG, "START Frame: %s", json_str);
+    cJSON_Delete(root);
+    return json_str;
+}
+
+
+static void websocket_event_handler(void *args, esp_event_base_t base, int32_t event_id, void *event_data) 
+{
+    esp_websocket_event_data_t *data = (esp_websocket_event_data_t *)event_data;
+
+    switch (event_id) 
+    {
+        case WEBSOCKET_EVENT_CONNECTED:
+            ESP_LOGI(TAG, "WebSocket Connected");
+            // 发送开始帧
+            char *start_frame = create_start_frame();
+            esp_websocket_client_send_text(ws_client, start_frame, strlen(start_frame), 100);
+            free(start_frame);
+        break;
+
+        case WEBSOCKET_EVENT_DATA:
+            if (data->op_code == 0x08 && data->data_len == 2) {
+            ESP_LOGI(TAG, "Received closed message");
+            } else {
+            ESP_LOGI(TAG, "Received=%.*s", data->data_len, (char*)data->data_ptr);
+            }
+
+            // 1. 解析JSON
+            cJSON *root = cJSON_Parse((char*)data->data_ptr);
+            if (!root) {
+                ESP_LOGE(TAG, "JSON解析失败！错误位置: %s", cJSON_GetErrorPtr());
+                return;
+            }
+        
+            // 2. 检查type字段是否为FIN_TEXT
+            cJSON *type = cJSON_GetObjectItemCaseSensitive(root, "type");
+            if (!cJSON_IsString(type)) {
+                ESP_LOGE(TAG, "type字段不存在或不是字符串类型");
+                cJSON_Delete(root);
+                return;
+            }
+        
+            // 3. 比较type值
+            if (strcmp(type->valuestring, "FIN_TEXT") == 0) {
+                // 4. 提取result字段
+                cJSON *result = cJSON_GetObjectItemCaseSensitive(root, "result");
+                if (cJSON_IsString(result) && result->valuestring != NULL) {
+                    ESP_LOGI(TAG, "最终识别结果: %s", result->valuestring);
+                    
+                    // 5. 这里添加业务逻辑处理
+                    // 动态分配内存并复制字符串
+                    payload.len = strlen(result->valuestring);
+                    payload.message = (char *)pvPortMalloc(payload.len + 1); // +1 for '\0'
+                    
+                    if (payload.message != NULL) 
+                    {
+                        strcpy(payload.message, result->valuestring);
+
+                        payload.flg = 1;
+                        // // 发送到队列（阻塞时间根据系统需求调整）
+                        // if (xQueueSend(xSpeechQueue, &payload, pdMS_TO_TICKS(100)) != pdPASS) 
+                        // {
+                        //     ESP_LOGE(TAG, "队列已满，丢弃结果: %s", payload.message);
+                        //     vPortFree(payload.message); // 发送失败需手动释放
+                        // }
+                    } 
+                    else 
+                    {
+                        ESP_LOGE(TAG, "内存分配失败！");
+                    }
+
+                } else {
+                    ESP_LOGW(TAG, "result字段无效或为空");
+                }
+            } else if (strcmp(type->valuestring, "MID_TEXT") == 0) {
+                ESP_LOGI(TAG, "收到中间识别结果，暂不处理");
+            } else {
+                ESP_LOGW(TAG, "未知的type类型: %s", type->valuestring);
+            }
+        
+            // 6. 释放资源
+            cJSON_Delete(root);
+
+        break;
+
+        case WEBSOCKET_EVENT_DISCONNECTED:
+            ESP_LOGI(TAG, "WebSocket Disconnected");
+        break;
+    }
+}
+
+
 void WebSocket_Init(void)
 {
     esp_websocket_client_config_t cfg = {
         .uri = "wss://vop.baidu.com/realtime_asr?sn=ABCD-XXXX-XXXX-XXX",
-        .reconnect_timeout_ms = 5000,           // 设置重连间隔为 5 秒
+        .reconnect_timeout_ms = 10000,           // 设置重连间隔为 5 秒
         .network_timeout_ms = 8000,             // 设置网络操作超时为 8 秒
         .cert_pem   = baidu_root_ca_pem_start,
         .cert_len   = baidu_root_ca_pem_end - baidu_root_ca_pem_start,
-        .ping_interval_sec = 5,  // 每 10 秒发送 ping
+        .ping_interval_sec = 10,  // 每 10 秒发送 ping
     };
     ws_client = esp_websocket_client_init(&cfg);
-    esp_websocket_register_events(ws_client, WEBSOCKET_EVENT_CONNECTED, on_ws_event, (void *)ws_client);
-    esp_websocket_register_events(ws_client, WEBSOCKET_EVENT_DATA, on_ws_event, (void *)ws_client);
+    esp_websocket_register_events(ws_client, WEBSOCKET_EVENT_ANY, websocket_event_handler, (void *)ws_client);
     esp_websocket_client_start(ws_client);
+
+    xSpeechQueue = xQueueCreate(10, sizeof(SpeechResult_t));
 }
 
 
+uint16_t i2s_readraw_buff[5120] = {0};
+size_t bytes_read;
 
-
-void detect_vad_task(void) 
+void detect_vad_task(void *arg)
 {
-    
-    // esp_websocket_client_start(ws_client);
-    // api_i2s_read(&buffer[buf_idx],read_bytes);
-    if (esp_websocket_client_is_connected(ws_client)) 
+    SpeechResult_t received_data;
+
+    while(1)
     {
-        //api_i2s_read(&buffer[buf_idx],read_bytes);
-        ESP_LOGI(TAG, "WEBSOCKET_CONNECTED");
-        esp_websocket_client_send_text(ws_client, "你好", 2, 100);
+        if (esp_websocket_client_is_connected(ws_client)) 
+        {
+            api_i2s_read(i2s_readraw_buff,sizeof(i2s_readraw_buff),&bytes_read);
+
+            esp_websocket_client_send_bin(ws_client, (char*)i2s_readraw_buff, bytes_read, 100);
+        }
+
+        if(1 == payload.flg)
+        {
+            //call_deepseek_api(payload.message);
+            qianfan_chat_request(payload.message);
+            vPortFree(payload.message);
+            payload.flg = 0;
+        }
+
+        // if (xQueueReceive(xSpeechQueue, &received_data, portMAX_DELAY) == pdPASS) 
+        // {
+        //     // 处理字符串（示例：打印到日志）
+        //     ESP_LOGI(TAG, "[长度:%d] 识别结果: %s", received_data.len, received_data.message);
+            
+        //     call_deepseek_api(received_data.message);
+        //     // 必须释放内存！
+        //     vPortFree(received_data.message);
+        // }
+
+        vTaskDelay(pdMS_TO_TICKS(10));  
     }
 
-    buf_idx ^= 1;
 }
 
 FILE *wav_file;
@@ -218,7 +346,7 @@ void detect_vad(void)
     {
         if(true == gpio_key_isr())
         {
-            hal_i2s_record("/spiffs/record.wav", 3);
+            hal_i2s_record("/spiffs/record.wav", 2);
             wav_file = fopen("/spiffs/record.wav", "r");
             fseek(wav_file, 0, SEEK_END);
             wav_file_size = ftell(wav_file);

@@ -21,4 +21,5 @@ dependencies:
   #espressif/es7210: "^1.0.0"
   espressif/es8311: "^1.0.0"
   espressif/esp_websocket_client: "^1.2.3"
+  espressif/esp-dsp: '*'
 

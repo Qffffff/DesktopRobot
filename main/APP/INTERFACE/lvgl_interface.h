@@ -13,5 +13,7 @@
 void lvgl_interface_init(void);
 void main_interface(void);
 void lvgl_set_text_speech(char *text);
+void LvMusicRhythmPro(void);
+void LvSetBarHigh(uint16_t *value);
 
 #endif

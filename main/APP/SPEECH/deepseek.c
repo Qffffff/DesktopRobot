@@ -4,14 +4,18 @@
 #include "esp_http_client.h"
 #include "app_speech.h"
 #include "lvgl_interface.h"
+#include "app_speech.h"
 
-#define DEEPSEEK_API_URL "https://api.deepseek.com/chat/completions"
+//#define DEEPSEEK_API_URL "https://api.deepseek.com/chat/completions"
+#define DEEPSEEK_API_URL "https://api.deepseek.com"
 #define API_KEY "sk-b73a76f6a45242fd9504ae5267555f95"
 static const char *TAG = "DEEPSEEK";
 
 
 extern const char deepseek_root_ca_pem_start[] asm("_binary_deepseek_ca_pem_start");
 extern const char deepseek_root_ca_pem_end[] asm("_binary_deepseek_ca_pem_end");
+extern const char qianfan_root_ca_pem_start[] asm("_binary_qianfan_ca_pem_start");
+extern const char qianfan_root_ca_pem_end[] asm("_binary_qianfan_ca_pem_end");
 
 static esp_err_t http_event_handler(esp_http_client_event_t *evt) 
 {
@@ -29,7 +33,7 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
         case HTTP_EVENT_ON_DATA:
             if (evt->data_len > 0) {
                 // 打印接收到的原始数据
-                ESP_LOGI(TAG, "Received data (len=%d): %.*s", evt->data_len, evt->data_len, (char*)evt->data);
+                //ESP_LOGI(TAG, "Received data (len=%d): %.*s", evt->data_len, evt->data_len, (char*)evt->data);
 
                 //增加缓存大小并拼接数据
                 char *temp_buffer = realloc(buffer, total_received + evt->data_len + 1);
@@ -48,7 +52,7 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
             break;
         case HTTP_EVENT_ON_FINISH:
             if (buffer != NULL) {
-                ESP_LOGI(TAG, "Request finished. Full response: %s", buffer);
+                //ESP_LOGI(TAG, "Request finished. Full response: %s", buffer);
 
                 // 解析 JSON 数据
                 cJSON *root = cJSON_Parse(buffer);
@@ -67,7 +71,7 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
                                 cJSON *content = cJSON_GetObjectItem(message, "content");
                                 if (content != NULL) {
                                     ESP_LOGI(TAG, "Content: %s", content->valuestring);
-                                    lvgl_set_text_speech(content->valuestring);
+                                    //lvgl_set_text_speech(content->valuestring);
                                     baidu_tts(content->valuestring);
                                 } else {
                                     ESP_LOGE(TAG, "没有找到 'content' 字段");
@@ -104,7 +108,7 @@ void call_deepseek_api(char *text)
     ESP_LOGI(TAG, "text = %s", text);
     // 构建请求体
     cJSON *root = cJSON_CreateObject();
-    cJSON_AddStringToObject(root, "model", "deepseek-chat");
+    cJSON_AddStringToObject(root, "model", "deepseek-reasoner");
     
     cJSON *messages = cJSON_AddArrayToObject(root, "messages");
     cJSON *system_msg = cJSON_CreateObject();
@@ -159,4 +163,64 @@ void call_deepseek_api(char *text)
     esp_http_client_cleanup(client);
     cJSON_Delete(root);
     free(post_data);
+
+    WebSocket_Init();
+}
+
+
+void qianfan_chat_request(char *text) {
+    // 1. 构建请求体
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "model", "ernie-3.5-8k");
+    
+    cJSON *messages = cJSON_AddArrayToObject(root, "messages");
+    // 添加系统消息
+    cJSON *system_msg = cJSON_CreateObject();
+    cJSON_AddStringToObject(system_msg, "role", "system");
+    cJSON_AddStringToObject(system_msg, "content", "平台助手");
+    cJSON_AddItemToArray(messages, system_msg);
+
+    // 添加用户消息
+    cJSON *user_msg = cJSON_CreateObject();
+    cJSON_AddStringToObject(user_msg, "role", "user");
+    cJSON_AddStringToObject(user_msg, "content", text);
+    cJSON_AddItemToArray(messages, user_msg);
+
+
+    char *payload = cJSON_PrintUnformatted(root);
+    ESP_LOGI(TAG, "请求体：%s", payload);
+
+    // 2. 配置HTTP客户端
+    esp_http_client_config_t config = {
+        .url = "https://qianfan.baidubce.com/v2/chat/completions",
+        .method = HTTP_METHOD_POST,
+        .event_handler = http_event_handler,
+        .cert_pem = qianfan_root_ca_pem_start,
+        //.cert_len   = qianfan_root_ca_pem_end - qianfan_root_ca_pem_start,
+        .buffer_size = 10 * 1024,
+        .disable_auto_redirect = true,  // 禁用自动重定向
+        .timeout_ms = 20000
+    };
+    
+    esp_http_client_handle_t client = esp_http_client_init(&config);
+
+    // 3. 设置请求头
+    esp_http_client_set_header(client, "Content-Type", "application/json");
+    esp_http_client_set_header(client, "Authorization", "Bearer bce-v3/ALTAK-jwWfMKs6UYY0VlgQERGH1/6595c5fc86abc29f450980a41c239c079781bd58");
+    esp_http_client_set_post_field(client, payload, strlen(payload));
+
+    // 4. 执行请求
+    esp_err_t err = esp_http_client_perform(client);
+    if (err == ESP_OK) {
+        ESP_LOGI(TAG, "HTTP状态码：%d", esp_http_client_get_status_code(client));
+    } else {
+        ESP_LOGE(TAG, "HTTP请求失败：%s", esp_err_to_name(err));
+    }
+
+    // 5. 清理资源
+    cJSON_Delete(root);
+    free(payload);
+    esp_http_client_cleanup(client);
+
+    WebSocket_Init();
 }

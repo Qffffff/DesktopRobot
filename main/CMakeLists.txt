@@ -13,6 +13,7 @@ idf_component_register(
         "APP/INTERFACE"
         "APP/SPIFFS"
         "APP/SPEECH"
+        "APP/EURHYTHMICS"    
     INCLUDE_DIRS 
         "."
         "BSP/ES7210"
@@ -27,7 +28,9 @@ idf_component_register(
         "APP/INTERFACE"
         "APP/SPIFFS"
         "APP/SPEECH"
+        "APP/EURHYTHMICS"   
     EMBED_TXTFILES 
         "deepseek_ca.pem"
         "baidu_ca.pem"
+        "qianfan_ca.pem"
 )

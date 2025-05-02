@@ -6,6 +6,6 @@
 #include "esp_log.h"
 
 void call_deepseek_api(char *text);
-
+void qianfan_chat_request(char *text);
 
 #endif

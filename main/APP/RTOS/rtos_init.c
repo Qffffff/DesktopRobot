@@ -23,11 +23,6 @@ void lvgl_task(void *pvParameters)
     ESP_LOGI(TAG, "lvgl_task begin");
 
     lvgl_interface_init();
-
-    while (1)
-    {
-        vTaskDelay(pdMS_TO_TICKS(10));  /* 延时10毫秒 */
-    }
 }
 
 
@@ -37,13 +32,7 @@ void speech_task(void *pvParameters)
 
     ESP_LOGI(TAG, "speech_task begin");
 
-    detect_vad(); 
-    // while (1)
-    // {
-    //     detect_vad_task();
-    //     vTaskDelay(pdMS_TO_TICKS(100));  /* 延时10毫秒 */
-        
-    // }
+    //detect_vad_task();
 }
 
 
@@ -56,11 +45,11 @@ void rtos_init(void)
                             (UBaseType_t    )LVGL_TASK_PRIO,        /* 任务优先级 */
                             (TaskHandle_t*  )&LVGL_Task_Handler,    /* 任务句柄 */
                             (BaseType_t     ) 0);                   /* 该任务哪个内核运行 */
-    xTaskCreatePinnedToCore((TaskFunction_t )speech_task,           /* 任务函数 */
-                            (const char*    )"speech_task",         /* 任务名称 */
-                            (uint16_t       )SPEECH_DEMO_STK_SIZE,  /* 任务堆栈大小 */
-                            (void*          )NULL,                  /* 传入给任务函数的参数 */
-                            (UBaseType_t    )SPEECH_TASK_PRIO,      /* 任务优先级 */
-                            (TaskHandle_t*  )&SPEECH_Task_Handler,  /* 任务句柄 */
-                            (BaseType_t     ) 1);                   /* 该任务哪个内核运行 */
+    // xTaskCreatePinnedToCore((TaskFunction_t )speech_task,           /* 任务函数 */
+    //                         (const char*    )"speech_task",         /* 任务名称 */
+    //                         (uint16_t       )SPEECH_DEMO_STK_SIZE,  /* 任务堆栈大小 */
+    //                         (void*          )NULL,                  /* 传入给任务函数的参数 */
+    //                         (UBaseType_t    )SPEECH_TASK_PRIO,      /* 任务优先级 */
+    //                         (TaskHandle_t*  )&SPEECH_Task_Handler,  /* 任务句柄 */
+    //                         (BaseType_t     ) 1);                   /* 该任务哪个内核运行 */
 }

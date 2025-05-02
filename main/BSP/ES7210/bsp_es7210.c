@@ -15,13 +15,13 @@ void es7210_codec_init(void)
     // 初始化es7210芯片
     ESP_LOGI(TAG, "Configure ES7210 codec parameters");
     es7210_codec_config_t codec_conf = {
-        .i2s_format = EXAMPLE_I2S_TDM_FORMAT,
+        .i2s_format = 0x03,
         .mclk_ratio = EXAMPLE_I2S_MCLK_MULTIPLE,
         .sample_rate_hz = EXAMPLE_I2S_SAMPLE_RATE,
         .bit_width = (es7210_i2s_bits_t)EXAMPLE_I2S_SAMPLE_BITS,
         .mic_bias = EXAMPLE_ES7210_MIC_BIAS,
         .mic_gain = EXAMPLE_ES7210_MIC_GAIN,
-        .flags.tdm_enable = true
+        .flags.tdm_enable = false
     };
     ESP_ERROR_CHECK(es7210_config_codec(es7210_handle, &codec_conf));
     ESP_ERROR_CHECK(es7210_config_volume(es7210_handle, EXAMPLE_ES7210_ADC_VOLUME));

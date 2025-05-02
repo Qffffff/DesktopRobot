@@ -29,10 +29,11 @@
 /* I2S configurations */
 #define EXAMPLE_I2S_TDM_FORMAT     (ES7210_I2S_FMT_I2S)
 #define EXAMPLE_I2S_CHAN_NUM       (2)
-#define EXAMPLE_I2S_SAMPLE_RATE    (48000)
+#define EXAMPLE_I2S_SAMPLE_RATE    (16000)
 #define EXAMPLE_I2S_MCLK_MULTIPLE  (I2S_MCLK_MULTIPLE_256)
 #define EXAMPLE_I2S_SAMPLE_BITS    (I2S_DATA_BIT_WIDTH_16BIT)
 #define EXAMPLE_I2S_TDM_SLOT_MASK  (I2S_TDM_SLOT0 | I2S_TDM_SLOT1)
+#define EXAMPLE_VOICE_VOLUME       (70)
 
 typedef struct {
     uint16_t sample_rate;
@@ -54,7 +55,8 @@ typedef struct {
 
 esp_err_t hal_i2s_microphone_init(void);
 void hal_i2s_record(char *file_path, int record_time);
-void api_i2s_write(char *data, int len);
-void api_i2s_read(char *data);
+esp_err_t record_wav(void);
+void api_i2s_write(char *data, size_t len);
+void api_i2s_read(char *data, size_t len ,size_t *bytes_read);
 
 #endif

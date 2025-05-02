@@ -1,7 +1,12 @@
 #include "lvgl_interface.h"
+#include "Eurhythmics.h"
 #include "app_wifi.h"
+#include "app_speech.h"
 
 static const char *TAG = "LVGL_INTERFACE";
+
+TaskHandle_t fft_task_handle = NULL;
+TaskHandle_t speech_task_handle = NULL;
 
 //字体
 LV_FONT_DECLARE(LryWord);               //汉语
@@ -28,6 +33,14 @@ lv_obj_t *label_time_min;
 lv_obj_t *label_time_sec;
 lv_obj_t *label_speech;
 
+typedef struct 
+{
+    uint8_t u8UpdataFlg;
+    uint8_t u8CurrentHeight;
+    lv_obj_t *volume_bar;
+}MusicRhythm_t;
+MusicRhythm_t MusicRhythm[64];
+
 
 static void main_screen_event_handler(lv_event_t *e) 
 {
@@ -40,8 +53,14 @@ static void main_screen_event_handler(lv_event_t *e)
             lv_dir_t dir = lv_indev_get_gesture_dir(indev);
             if(dir == LV_DIR_LEFT) 
             {
+                if(speech_task_handle != NULL) 
+                {
+                    vTaskDelete(speech_task_handle);  // 删除任务
+                    speech_task_handle = NULL;        // 清空句柄
+                }
                 // 左滑切换到副界面，动画向左移动
                 lv_scr_load_anim(sub_screen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, false);
+                xTaskCreatePinnedToCore(Eurhythmics_task, "fft_task", 10 * 1024, NULL, 5, &fft_task_handle, 1);  
             }
         }
     }
@@ -59,8 +78,15 @@ static void sub_screen_event_handler(lv_event_t *e)
             lv_dir_t dir = lv_indev_get_gesture_dir(indev);
             if(dir == LV_DIR_RIGHT) 
             {
+                if(fft_task_handle != NULL) 
+                {
+                    vTaskDelete(fft_task_handle);  // 删除任务
+                    fft_task_handle = NULL;        // 清空句柄
+                }
                 // 右滑返回主界面，动画向右移动
                 lv_scr_load_anim(main_screen, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 300, 0, false);
+                xTaskCreatePinnedToCore(detect_vad_task, "speech_task", 10 * 1024, NULL, 5, &speech_task_handle, 1);  
+
             }
         }
     }
@@ -212,8 +238,8 @@ void main_interface(void)
     lv_coord_t scr_act_width = lv_obj_get_width(lv_scr_act());         //x 
     lv_coord_t scr_act_height = lv_obj_get_height(lv_scr_act());       //y
 
-    ESP_LOGI(TAG, "scr_act_width \t\t%d", scr_act_width);  // 终端输出wifi名称
-    ESP_LOGI(TAG, "scr_act_height \t\t%d", scr_act_height);  // 终端输出wifi名称
+    ESP_LOGI(TAG, "scr_act_width \t\t%d", scr_act_width);  
+    ESP_LOGI(TAG, "scr_act_height \t\t%d", scr_act_height); 
 
     main_screen = lv_obj_create(NULL);
     lv_obj_clear_flag(main_screen, LV_OBJ_FLAG_SCROLLABLE); 
@@ -303,6 +329,7 @@ void main_interface(void)
     lv_obj_add_flag(main_screen, LV_OBJ_FLAG_CLICKABLE); 
     
     lv_disp_load_scr(main_screen);
+
 }
 
 
@@ -313,15 +340,58 @@ void Secondary_interface(void)
     lv_obj_clear_flag(sub_screen, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_bg_color(sub_screen, lv_color_hex(0x000000), LV_PART_MAIN);  
     
-    lv_obj_t *label = lv_label_create(sub_screen);
-    lv_label_set_text(label, "副界面");
-    lv_obj_center(label);
+    // lv_obj_t *label = lv_label_create(sub_screen);
+    // lv_label_set_text(label, "副界面");
+    // lv_obj_center(label);
     
     lv_obj_add_event_cb(sub_screen, sub_screen_event_handler, LV_EVENT_GESTURE, NULL);
     lv_obj_add_flag(sub_screen, LV_OBJ_FLAG_CLICKABLE);
+
+    for (int i = 0; i < 31; i++) 
+    {
+        MusicRhythm[i].volume_bar = lv_obj_create(sub_screen);
+        lv_obj_set_size(MusicRhythm[i].volume_bar , 10, 200);  
+        lv_obj_align(MusicRhythm[i].volume_bar, LV_ALIGN_BOTTOM_LEFT, 10 * i +5, 10);
+        lv_obj_set_style_radius(MusicRhythm[i].volume_bar, 0, 0);
+        lv_obj_set_style_border_width(MusicRhythm[i].volume_bar , 0, LV_PART_MAIN);
+        lv_obj_set_style_bg_color(MusicRhythm[i].volume_bar , lv_color_hex(0x00ff00), 0);
+        MusicRhythm[i].u8CurrentHeight = 200;
+    }        
 }
 
+uint8_t u8flg = 0;
+void LvSetBarHigh(uint16_t *value)
+{
+    u8flg = 1;
+    for(int i = 0; i < 31; i++)
+    {
+        if(value[i] >= MusicRhythm[i].u8CurrentHeight + 20)
+        {
+            MusicRhythm[i].u8CurrentHeight = value[i];
+            if((MusicRhythm[i].u8CurrentHeight <= 200) && (MusicRhythm[i].u8CurrentHeight >= 10))
+            {
+                lv_obj_set_height(MusicRhythm[i].volume_bar, value[i]);
+            }           
+        }
+    }
+    u8flg = 0;
+}
 
+void LvMusicRhythmPro(void)
+{
+    if(u8flg == 0)
+    {
+        for(int i = 0; i < 31; i++)
+        {
+            //MusicRhythm[i].u8CurrentHeight = lv_obj_get_height(MusicRhythm[i].volume_bar);
+            if(MusicRhythm[i].u8CurrentHeight > 10 && MusicRhythm[i].u8CurrentHeight <= 200)
+            {
+                MusicRhythm[i].u8CurrentHeight = MusicRhythm[i].u8CurrentHeight - 10;
+                lv_obj_set_height(MusicRhythm[i].volume_bar, MusicRhythm[i].u8CurrentHeight);
+            }     
+        }  
+    }  
+}
 
 void lvgl_interface_init(void)
 {
@@ -330,4 +400,12 @@ void lvgl_interface_init(void)
     
     // 初始加载主界面
     lv_scr_load(main_screen);
+
+    xTaskCreatePinnedToCore(detect_vad_task, "speech_task", 10 * 1024, NULL, 5, &speech_task_handle, 1);  
+
+    while(1)
+    {
+        LvMusicRhythmPro();
+        vTaskDelay(pdMS_TO_TICKS(50));  
+    }
 }
